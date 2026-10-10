@@ -606,7 +606,7 @@ async function renderShHero() {
           <input type="file" id="heroSlideFile" accept="image/png,image/jpeg,image/webp" class="sr-only" />
         </label>
       </div>
-      <p style="padding:16px 22px 0;color:var(--stone);font-size:13px;">These photos rotate behind the headline, in this order. Up to 8 slides, and at least one must stay. Use the focus slider to choose which part of a tall or wide photo stays in view. Until you add one, the built-in photo is shown.</p>
+      <p style="padding:16px 22px 0;color:var(--stone);font-size:13px;">These photos rotate behind the headline, in this order. Up to 8 slides, and at least one must stay. Use the focus slider to choose which part of a tall or wide photo stays in view. Until you add your own, three built-in photos rotate.</p>
       <div class="manage-grid" id="heroSlideGrid"><div class="skeleton" style="height:160px;"></div></div>
     </div>
   `;

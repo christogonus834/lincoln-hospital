@@ -397,11 +397,20 @@ function renderExtraContent(extras) {
   `).join('');
 }
 
+// Shown until the admin adds their own slides (Admin > Hero Slides).
+const DEFAULT_HERO_SLIDES = [
+  { image_url: '/images/hospital-building.jpg', focus_y: 50 },
+  { image_url: '/images/hospital-facade.jpg', focus_y: 66 },
+  { image_url: '/images/hospital-theatre.jpg', focus_y: 50 },
+];
+
 async function loadHeroSlides() {
+  let slides = DEFAULT_HERO_SLIDES;
   try {
-    const slides = await api.get('/api/hospital/hero-slides');
-    if (slides.length) initHeroSlider(slides);
-  } catch (e) { /* keep the built-in photo */ }
+    const fromAdmin = await api.get('/api/hospital/hero-slides');
+    if (fromAdmin.length) slides = fromAdmin;
+  } catch (e) { /* API unreachable: keep the built-in slides */ }
+  initHeroSlider(slides);
 }
 
 loadHeroSlides();
