@@ -46,7 +46,7 @@ async function loadAppointments(status = '') {
               <td>
                 <select class="status-select" data-appt-id="${a.id}" data-action="status">
                   ${['pending','confirmed','completed','cancelled'].map((s) => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-                </select>
+                </select>${a.status === 'confirmed' ? (a.patient_notified_at ? '<br/><span class="toggle-pill on" title="Confirmation emailed to the patient">Patient emailed</span>' : '<br/><span class="toggle-pill off">Patient not emailed</span>') : ''}
               </td>
               <td>
                 <div class="row-actions">
@@ -62,8 +62,11 @@ async function loadAppointments(status = '') {
     wrap.querySelectorAll('[data-action="status"]').forEach((sel) => {
       sel.addEventListener('change', async () => {
         try {
-          await api.put(`/api/admin/hospital/appointments/${sel.dataset.apptId}`, { status: sel.value });
-          showToast('Appointment status updated.');
+          const r = await api.put(`/api/admin/hospital/appointments/${sel.dataset.apptId}`, { status: sel.value });
+          if (r.patientEmailed === true) showToast('Confirmed. The patient has been emailed.');
+          else if (r.patientEmailed === false) showToast('Confirmed, but the patient email failed: ' + (r.patientEmailError || 'unknown reason'), 'error');
+          else showToast('Appointment status updated.');
+          if (r.patientEmailed !== undefined) loadAppointments(document.getElementById('apptStatusFilter').value);
         } catch (e) {
           showToast(e.message, 'error');
         }
@@ -132,6 +135,7 @@ async function loadDoctorsManage() {
           <div class="manage-card__footer">
             <span class="toggle-pill ${d.is_active ? 'on' : 'off'}">${d.is_active ? 'Active' : 'Hidden'}</span>
             <div class="row-actions">
+              <button class="icon-btn" data-action="test-email" data-doctor-id="${d.id}" title="Send a test email to this doctor" ${d.email ? '' : 'disabled'}><span class="icon">${icon('mail')}</span></button>
               <button class="icon-btn" data-action="edit-doctor" data-doctor-id="${d.id}" title="Edit"><span class="icon">${icon('edit')}</span></button>
               <button class="icon-btn danger" data-action="delete-doctor" data-doctor-id="${d.id}" title="Delete"><span class="icon">${icon('trash')}</span></button>
             </div>
@@ -142,6 +146,18 @@ async function loadDoctorsManage() {
 
     grid.querySelectorAll('[data-action="edit-doctor"]').forEach((btn) => {
       btn.addEventListener('click', () => openDoctorForm(doctors.find((d) => d.id === btn.dataset.doctorId)));
+    });
+    grid.querySelectorAll('[data-action="test-email"]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          const r = await api.post(`/api/admin/hospital/doctors/${btn.dataset.doctorId}/test-email`, {});
+          showToast('Test email sent to ' + r.to + '. Ask the doctor to check their inbox and spam.');
+        } catch (e) {
+          showToast('Email failed: ' + e.message, 'error');
+        }
+        btn.disabled = false;
+      });
     });
     grid.querySelectorAll('[data-action="delete-doctor"]').forEach((btn) => {
       btn.addEventListener('click', () => {
