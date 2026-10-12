@@ -351,26 +351,37 @@ function closeApptModal() {
 apptModal.addEventListener('click', (e) => { if (e.target === apptModal) closeApptModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeApptModal(); });
 
+// Each piece is applied on its own, so one missing element can never stop
+// the rest of the admin-edited content from showing.
+function setText(selector, text) {
+  const el = document.querySelector(selector);
+  if (el && text) el.textContent = text;
+}
+
 async function loadIntroContent() {
+  let content;
   try {
-    const content = await api.get('/api/hospital/content');
+    content = await api.get('/api/hospital/content');
+  } catch (e) { return; /* keep the static copy already in the HTML */ }
 
-    const hero = content.find((c) => c.id === 'hospital_hero');
-    if (hero) {
-      if (hero.title) document.getElementById('heroTitle').textContent = hero.title;
-      if (hero.body) document.getElementById('heroLead').textContent = hero.body;
-    }
+  const hero = content.find((c) => c.id === 'hospital_hero');
+  if (hero) {
+    setText('#heroTitle, .sh-hero h1', hero.title);
+    setText('#heroLead, .sh-hero h1 + p', hero.body);
+  }
 
-    const intro = content.find((c) => c.id === 'hospital_intro');
-    if (intro) {
-      if (intro.title) document.getElementById('introTitle').textContent = intro.title;
-      if (intro.body) document.getElementById('introBody').textContent = intro.body;
-      if (intro.image_url) document.getElementById('introImage').src = intro.image_url;
-    }
+  const intro = content.find((c) => c.id === 'hospital_intro');
+  if (intro) {
+    setText('#introTitle', intro.title);
+    setText('#introBody', intro.body);
+    const img = document.getElementById('introImage');
+    if (img && intro.image_url) img.src = intro.image_url;
+  }
 
+  try {
     const extras = content.filter((c) => c.placement === 'extra').sort((a, b) => a.sort_order - b.sort_order);
     renderExtraContent(extras);
-  } catch (e) { /* fall back to static copy already in HTML */ }
+  } catch (e) { /* ignore */ }
 }
 
 function renderExtraContent(extras) {
