@@ -96,8 +96,12 @@ async function renderShDoctors() {
     <div class="panel">
       <div class="panel__head">
         <h2>All doctors</h2>
-        <button class="btn btn-save" id="addDoctorBtn" style="padding:9px 16px;font-size:13.5px;">${icon('plus')} Add doctor</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn" id="emailCheckBtn" style="padding:9px 16px;font-size:13.5px;background:transparent;border:1.5px solid currentColor;color:inherit;">${icon('mail')} Check email setup</button>
+          <button class="btn btn-save" id="addDoctorBtn" style="padding:9px 16px;font-size:13.5px;">${icon('plus')} Add doctor</button>
+        </div>
       </div>
+      <div id="emailCheckBox" style="padding:0 22px;"></div>
       <div class="manage-grid" id="doctorsManageGrid"><div class="skeleton" style="height:240px;"></div></div>
     </div>
   `;
@@ -108,6 +112,7 @@ async function renderShDoctors() {
   } catch (e) { departmentsForDoctorForm = []; }
 
   document.getElementById('addDoctorBtn').addEventListener('click', () => openDoctorForm());
+  document.getElementById('emailCheckBtn').addEventListener('click', runEmailCheck);
   loadDoctorsManage();
 }
 
@@ -708,4 +713,29 @@ async function loadHeroSlideGrid(base) {
   } catch (e) {
     grid.innerHTML = emptyState('Could not load slides.');
   }
+}
+
+
+// Walks through the Brevo setup and shows which step is broken.
+async function runEmailCheck() {
+  const box = document.getElementById('emailCheckBox');
+  const btn = document.getElementById('emailCheckBtn');
+  btn.disabled = true;
+  box.innerHTML = '<p style="margin:14px 0;color:var(--stone);font-size:13.5px;">Checking the email setup…</p>';
+  try {
+    const { checks } = await api.get('/api/admin/hospital/email-check');
+    const allOk = checks.every((c) => c.ok);
+    box.innerHTML = `
+      <div style="margin:14px 0 4px;padding:14px 16px;border-radius:12px;border:1px solid ${allOk ? '#9fd3b0' : '#e3a79d'};background:${allOk ? '#eef8f1' : '#fbefed'};">
+        <strong style="display:block;margin-bottom:8px;">${allOk ? 'Email setup looks good. Use the mail button on a doctor card to send a test.' : 'Something needs fixing before emails can be sent:'}</strong>
+        ${checks.map((c) => `
+          <div style="display:flex;gap:10px;margin:7px 0;font-size:13.5px;line-height:1.45;">
+            <span style="font-weight:700;color:${c.ok ? '#2f7d4f' : '#a3392b'};">${c.ok ? '✓' : '✗'}</span>
+            <span><strong>${esc(c.name)}</strong><br/><span style="color:var(--ink-soft);">${esc(c.detail)}</span></span>
+          </div>`).join('')}
+      </div>`;
+  } catch (e) {
+    box.innerHTML = `<p style="margin:14px 0;color:#a3392b;font-size:13.5px;">Could not run the check: ${esc(e.message)}</p>`;
+  }
+  btn.disabled = false;
 }

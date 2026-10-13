@@ -197,7 +197,7 @@ async function loadContentList(division, base, reorderBase) {
 
     list.querySelectorAll('[data-action="save-content"]').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        const card = btn.closest('[data-content-id]');
+        const card = btn.closest('.manage-card');
         const title = card.querySelector('[data-field="title"]').value;
         const body = card.querySelector('[data-field="body"]').value;
         try {

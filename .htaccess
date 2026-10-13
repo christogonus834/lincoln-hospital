@@ -1,0 +1,72 @@
+# =====================================================================
+# .htaccess for the hospital frontend on cPanel / Apache hosting
+# (replaces vercel.json). Upload to public_html and rename to  .htaccess
+# =====================================================================
+
+Options -Indexes
+
+# ---------------------------------------------------------------------
+# 1) Always use HTTPS
+#    (Turn on the free SSL in cPanel first: "SSL/TLS Status" > Run AutoSSL)
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # -------------------------------------------------------------------
+  # 2) Clean links: /board and /admin  ->  board.html and admin.html
+  # -------------------------------------------------------------------
+  RewriteRule ^board/?$ board.html [L]
+  RewriteRule ^admin/?$ admin.html [L]
+</IfModule>
+
+ErrorDocument 404 /404.html
+
+# ---------------------------------------------------------------------
+# 3) Security headers
+#    connect-src must list your backend address, or the site cannot load
+#    doctors, departments or log in. If the backend address ever changes,
+#    change it here too.
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://lincolnhospital-backend.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  # Only once HTTPS is working for sure (browsers remember this for a year):
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 4) Caching: pages are always re-checked, so edits show up straight away.
+#    Scripts and styles are kept for an hour, images for a week.
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+  <FilesMatch "\.(jpg|jpeg|png|webp|avif|svg|ico|woff2)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 5) Compression
+# ---------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 6) Never serve hidden or project files
+# ---------------------------------------------------------------------
+<FilesMatch "^\.(?!well-known)|\.(md|log)$|^vercel\.json$">
+  Require all denied
+</FilesMatch>
